@@ -4,6 +4,7 @@ import random
 import sys
 
 import discord
+import mysql.connector
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -24,21 +25,23 @@ GUILD = os.getenv('DISCORD_GUILD')
 bot = commands.Bot(command_prefix='^')
 
 
+#region Commands
 @bot.command(name='rq', help='Responds with a random quote from corn')
 async def random_quote(ctx):
-    print(f'Message seen: "{ctx.message.content}" in channel: "{ctx.message.channel}"')
-    corn_quotes = [
-        'The heck why does everyone need to announce their desire to eat me',
-        'well swive me then',
-        (
-            'Wait why do I look pregnant in that snap\n'
-            'Better than her pregnant I guess'
-        ),
-    ]
-    response = random.choice(corn_quotes)
+    # print(f'Message seen: "{ctx.message.content}" in channel: "{ctx.message.channel}"')
+    _, args = parse_command(ctx.message.content)
+    if len(args) < 1:
+        # return
+        args = ['corn']
+    if args[0] == '<@!189945609615048704>':
+        args[0] = 'corn'
+    response = get_random_row(args[0], os.getenv('QUOTES_TB_COLS'))
     await ctx.send(response)
 
 
+#endregion
+
+#region Events
 @bot.event
 async def on_ready():
     guild = discord.utils.get(bot.guilds, name=GUILD)
