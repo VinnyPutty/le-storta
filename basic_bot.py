@@ -213,9 +213,6 @@ def main():
     mysql_dbcursor = mysql_dbclient.cursor()
     verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
 
-    mysql_dbcursor.execute('SELECT * from corn')
-    print(mysql_dbcursor.rowcount)
-
 
 
 
