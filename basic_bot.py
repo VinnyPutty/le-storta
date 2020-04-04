@@ -67,28 +67,159 @@ async def on_message(message):
             command, args = command[0], command[1:]
         parse_command(command[0], args)
 
-
-    corn_quotes = [
-        'The heck why does everyone need to announce their desire to eat me',
-        'well swive me then',
-        (
-            'Wait why do I look pregnant in that snap\n'
-            'Better than her pregnant I guess'
-        ),
-    ]
-
     if message.content == 'iajofiawejfpjapefkaopekfopakewopfk':
         response = random.choice(corn_quotes)
         await message.channel.send(response)
     elif message.content == 'raise-exception':
         raise discord.DiscordException
+#endregion
 
-def parse_command(command, args):
-    if command in ['randquote', 'randomquote', 'rq']:
-        if args[0] == '@vinnyputty':
-            return
+
+def parse_command(command):
+    command = command.split(' ')
+    command, args = command[0], command[1:]
+    return command, args
+
+
+#region MySQL
+def connect_to_mysql(host=None, user=None, passwd=None, database=None):
+    if not host:
+        host, user, passwd = os.getenv('MYSQL_LOC'), os.getenv('MYSQL_USER'), os.getenv('MYSQL_PASS')
+    if not database:
+        mysql_client = mysql.connector.connect(
+            host=host,
+            user=user,
+            passwd=passwd
+        )
+    else:
+        mysql_client = mysql.connector.connect(
+            host=host,
+            user=user,
+            passwd=passwd,
+            database=database
+        )
+    return mysql_client
+
+
+def build_database_list(mysql_cursor):
+    mysql_cursor.execute('SHOW DATABASES')
+    database_list = [database[0] for database in mysql_cursor]
+    return database_list
+
+
+def build_table_list(mysql_dbcursor):
+    mysql_dbcursor.execute('SHOW TABLES')
+    table_list = [table[0] for table in mysql_dbcursor]
+    return table_list
+
+
+def verify_database_existence(mysql_cursor, db_name, database_list=None):
+    if not database_list:
+        database_list = build_database_list(mysql_cursor)
+    if db_name not in database_list:
+        sql_command = f'CREATE DATABASE {db_name}'
+        print(f'mysql_exec: {sql_command}')
+        mysql_cursor.execute(sql_command)
+
+
+def verify_table_existence(mysql_dbcursor, tb_name, tb_cols_init, table_list=None):
+    if not table_list:
+        table_list = build_table_list(mysql_dbcursor)
+    if tb_name not in table_list:
+        sql_command = f'CREATE TABLE {tb_name} {tb_cols_init}'
+        print(f'mysql_exec: {sql_command}')
+        mysql_dbcursor.execute(sql_command)
+
+
+async def build_table(tb_name, tb_cols_init, tb_cols, guild_channel_name=None, limit=-1, mysql_dbcursor=None, db_name=None):
+    mysql_dbclient = None
+    if not mysql_dbcursor:
+        mysql_dbclient = connect_to_mysql(database=db_name)
+        mysql_dbcursor = mysql_dbclient.cursor()
+    verify_table_existence(mysql_dbcursor, tb_name, tb_cols_init)
+    if guild_channel_name:
+        guild = discord.utils.get(bot.guilds, name=GUILD)
+        channel = discord.utils.get(guild.text_channels, name=guild_channel_name)
+        channel_id = channel.id
+        if limit > 0:
+            channel_history = bot.get_channel(channel_id).history(limit=limit)
+        else:
+            channel_history = bot.get_channel(channel_id).history()
+        async for message in channel_history:
+            sql_command = f'INSERT INTO {tb_name} {tb_cols} VALUES (%s)'
+            sql_values = (message.content,)
+            mysql_dbcursor.execute(sql_command, sql_values)
+        mysql_dbclient.commit()
+
+
+def print_rows(tb_name, tb_cols_init, tb_cols, guild_channel=None, limit=-1, mysql_dbcursor=None, db_name=None):
+    print(f'Printing rows from table "{tb_name}":\n')
+    mysql_dbclient = None
+    if not mysql_dbcursor:
+        mysql_dbclient = connect_to_mysql(database=db_name)
+        mysql_dbcursor = mysql_dbclient.cursor()
+    verify_table_existence(mysql_dbcursor, tb_name, tb_cols_init)
+    sql_command = f'SELECT * FROM {tb_name}'
+    mysql_dbcursor.execute(sql_command)
+    for row in mysql_dbcursor:
+        print(row)
+
+
+def get_random_row(tb_name, tb_cols):
+    mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
+    mysql_dbcursor = mysql_dbclient.cursor()
+    sql_command = f'SELECT * FROM {tb_name}'
+    print(f'mysql_exec: {sql_command}')
+    mysql_dbcursor.execute(sql_command)
+    for row in mysql_dbcursor:
+        print(row)
+    if mysql_dbcursor.rowcount < 1:
+        return 'No quotes in table.'
+    sql_command = f'SELECT quote FROM {tb_name} WHERE id={random.randint(1, mysql_dbcursor.rowcount)}'
+    print(f'mysql_exec: {sql_command}')
+    mysql_dbcursor.execute(sql_command)
+    quote = list(mysql_dbcursor)[0][0]
+    return quote
+#endregion
+
+async def print_message_history(channel_name, limit=-1):
+    print(f'Printing message history of channel "{channel_name}":\n')
+    guild = discord.utils.get(bot.guilds, name=GUILD)
+    channel = discord.utils.get(guild.text_channels, name=channel_name)
+    channel_id = channel.id
+    # print_message_history()
+    if limit > 0:
+        channel_history = bot.get_channel(channel_id).history(limit=limit)
+    else:
+        channel_history = bot.get_channel(channel_id).history()
+    async for message in channel_history:
+        print(message.content)
+
 
 def main():
+    mysql_client = connect_to_mysql()
+    mysql_cursor = mysql_client.cursor()
+    database_list = build_database_list(mysql_cursor)
+    print(f'Old database list: {database_list}')
+    verify_database_existence(mysql_cursor, db_name=os.getenv('QUOTES_DB_NAME'), database_list=database_list)
+    verify_database_existence(mysql_cursor, db_name=os.getenv('KANAN_DB_NAME'), database_list=database_list)
+    database_list = build_database_list(mysql_cursor)
+    print(f'Updated database list: {database_list}')
+
+    mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
+    mysql_dbcursor = mysql_dbclient.cursor()
+    verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
+
+    mysql_dbcursor.execute('SELECT * from corn')
+    print(mysql_dbcursor.rowcount)
+
+
+
+
+
+
+
+
     bot.run(TOKEN)
 
 
