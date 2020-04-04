@@ -1,10 +1,19 @@
 # basic_bot.py
 import os
 import random
+import sys
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+
+if not os.path.exists('./config/.env'):
+    if not os.path.exists('./config'):
+        os.mkdir('./config')
+    with open('./config/.env', 'w') as dotenv_file:
+        dotenv_file.write('DISCORD_TOKEN=\nDISCORD_GUILD=')
+    print('Enter .env variables in "./config/.env"', file=sys.stderr, flush=True)
+    exit(1)
 
 load_dotenv(dotenv_path='./config/.env')
 TOKEN = os.getenv('DISCORD_TOKEN')
