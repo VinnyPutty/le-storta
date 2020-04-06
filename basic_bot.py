@@ -71,7 +71,7 @@ async def random_kanan(ctx, *args):
     response = discord_guild.mysql_conn.get_random_row('$'.join((os.getenv('KANAN_DB_NAME'), str(ctx.guild.id))),
                                                        args[0], os.getenv('KANAN_TB_COLS'))[0]
     # await ctx.send(response)
-    await ctx.send(embed=discord.Embed(title='Here, have some Kanan :)').set_image(url=response))
+    await ctx.send(embed=discord.Embed(title='Here, have some Kanan <:kananayaya:696804621095796777>').set_image(url=response))
 
 
 # TODO split into scramble and unscramble and add option to scramble for specified amount of time
