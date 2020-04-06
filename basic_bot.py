@@ -108,7 +108,7 @@ async def toggle_scramble(ctx, *args):
 
 # endregion
 
-async def check_scramble_message(message):
+async def check_scramble_message(message, in_place=False):
     if message.content[0] == '^':
         return False
     await served_guilds_lock.acquire()
@@ -129,20 +129,32 @@ async def check_scramble_message(message):
     member_status = member_row[1]
     if not member_status:
         return False
+    if in_place:
+        return await scramble_message_in_place(message)
+    else:
+        return await scramble_message_bot_overwrite(message)
+
+
+async def scramble_message_bot_overwrite(message):
     message_content = message.content
     await message.delete()
-    scrambled_message = await scramble_message(message_content)
-    response = f'{member.mention}: {scrambled_message}'
+    scrambled_message = await clean_scramble_string(message_content)
+    response = f'{message.author.mention}: {scrambled_message}'
     await message.channel.send(response)
     return True
 
 
-async def scramble_message(message_content):
-    message_content = ''.join(filter(lambda s: str.isalpha(s) or s == ' ', message_content))
-    message_content = list(message_content.lower())
-    random.shuffle(message_content)
-    scrambled_message = ''.join(message_content)
-    return scrambled_message
+async def scramble_message_in_place(message):
+    # Currently impossible because user is only allowed to edit messages that they have sent
+    return False
+
+
+async def clean_scramble_string(orig_string):
+    orig_string = ''.join(filter(lambda s: s == ' ' or str.isalpha(s), orig_string))
+    orig_string = list(orig_string.lower())
+    random.shuffle(orig_string)
+    scrambled_string = ''.join(orig_string)
+    return scrambled_string
 
 
 # region Events
