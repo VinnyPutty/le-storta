@@ -42,7 +42,11 @@ async def random_quote(ctx):
         args = ['corn']
     if args[0] == '<@!189945609615048704>':
         args[0] = 'corn'
-    response = get_random_row(args[0], os.getenv('QUOTES_TB_COLS'))
+    await served_guilds_lock.acquire()
+    discord_guild = served_guilds[ctx.guild.id]
+    served_guilds_lock.release()
+    response = discord_guild.mysql_conn.get_random_row('$'.join((os.getenv('QUOTES_DB_NAME'), str(ctx.guild.id))),
+                                                       args[0], os.getenv('QUOTES_TB_COLS'))[0]
     await ctx.send(response)
 
 
