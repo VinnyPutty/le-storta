@@ -1,4 +1,6 @@
 # basic_bot.py
+import asyncio
+import json
 import os
 import random
 import sys
@@ -19,7 +21,10 @@ if not os.path.exists('./config/.env'):
 
 load_dotenv(dotenv_path='./config/.env')
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
+GUILD_NAMES = json.loads(os.getenv('DISCORD_GUILD'))
+
+served_guilds: Dict[int, DiscordGuild] = {}
+served_guilds_lock = asyncio.Lock()
 
 # client = discord.Client()
 
@@ -42,18 +47,67 @@ async def random_quote(ctx):
 
 #endregion
 
-#region Events
+async def check_scramble_message(message):
+    if message.content[0] == '^':
+        return False
+    await served_guilds_lock.acquire()
+    discord_guild = served_guilds[message.guild.id]
+    served_guilds_lock.release()
+    member = message.author
+    # member_row = discord_guild.mysql_conn.select_row(
+    #     '$'.join((os.getenv('MESSAGE_SCRAMBLER_DB_NAME'), str(message.guild.id))),
+    #     'message_scrambler', os.getenv('MESSAGE_SCRAMBLER_TB_COLS'), select_clause=f'where member={member.id}')
+    member_row = discord_guild.mysql_conn.select_row(
+        '$'.join((os.getenv('MESSAGE_SCRAMBLER_DB_NAME'), str(message.guild.id))),
+        'message_scrambler', os.getenv('MESSAGE_SCRAMBLER_TB_COLS'), select_clause=f'member={member.id}')
+    if not member_row:
+        member_row = discord_guild.mysql_conn.add_row(
+            '$'.join((os.getenv('MESSAGE_SCRAMBLER_DB_NAME'), str(message.guild.id))),
+            'message_scrambler', os.getenv('MESSAGE_SCRAMBLER_TB_COLS'),
+            row_values=(member.id, True), return_inserted_row=True)
+    member_status = member_row[1]
+    if not member_status:
+        return False
+    message_content = message.content
+    await message.delete()
+    scrambled_message = await scramble_message(message_content)
+    response = f'{member.mention}: {scrambled_message}'
+    await message.channel.send(response)
+    return True
+
+
+async def scramble_message(message_content):
+    message_content = ''.join(filter(lambda s: str.isalpha(s) or s == ' ', message_content))
+    message_content = list(message_content.lower())
+    random.shuffle(message_content)
+    scrambled_message = ''.join(message_content)
+    return scrambled_message
+
+
+# region Events
 @bot.event
 async def on_ready():
-    guild = discord.utils.get(bot.guilds, name=GUILD)
-    if not guild: return
-    print(
-        f'{bot.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})\n'
-    )
-
-    members = '\n - '.join([member.name for member in guild.members])
-    print(f'Guild Members:\n - {members}')
+    MEMBERS_TO_PRINT = os.getenv('MEMBERS_TO_PRINT')
+    # FIXME maybe handle "allowed" servers differently (currently non-allowed servers are ignored with prejudice,
+    #  notification, or configurability
+    for guild_name in GUILD_NAMES:
+        guild = discord.utils.get(bot.guilds, name=guild_name)
+        if guild:
+            await served_guilds_lock.acquire()
+            if guild.id in served_guilds:
+                served_guilds_lock.release()
+                continue
+            served_guilds[guild.id] = DiscordGuild(guild=guild, bot=bot)
+            # await served_guilds[guild.id].mysql_conn.build_kanan_table(
+            #     '$'.join((os.getenv('KANAN_DB_NAME'), str(guild.id))), 'kanan',
+            #     os.getenv('KANAN_TB_COLS_INIT'), '(link)', limit=None)
+            served_guilds_lock.release()
+            print(f'\n------')
+            print(f'{bot.user} is connected to the following guild: {guild.name} (id: {guild.id})')
+            print(f'First {MEMBERS_TO_PRINT} members:')
+            members = '\n - '.join([member.name for member in guild.members[:20]])
+            print(f' - {members}')
+            print(f'------\n')
 
 
 @bot.event
@@ -87,7 +141,7 @@ def parse_command(command):
 
 async def print_message_history(guild_id, channel_name, limit=-1):
     print(f'Printing message history of channel "{channel_name}":\n')
-    guild = discord.utils.get(bot.guilds, name=GUILD)
+    guild = discord.utils.get(bot.guilds, id=guild_id)
     channel = discord.utils.get(guild.text_channels, name=channel_name)
     channel_id = channel.id
     # print_message_history()
@@ -121,4 +175,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
