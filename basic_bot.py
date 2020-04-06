@@ -4,6 +4,7 @@ import json
 import os
 import random
 import sys
+from typing import Dict
 
 import discord
 from discord.ext import commands
@@ -45,7 +46,63 @@ async def random_quote(ctx):
     await ctx.send(response)
 
 
-#endregion
+@bot.command(name='kanan', aliases=['k', 'kana'], help='Responds with a random picture from kanan-channel')
+async def random_kanan(ctx, *args):
+    # @bot.group(pass_context=True)
+    # async def john(ctx):
+    #     if ctx.invoked_subcommand is None:
+    #         await bot.say('https://i.imgur.com/rZWO3QB.png'.format(ctx))
+
+    # print(f'Message seen: "{ctx.message.content}" in channel: "{ctx.message.channel}"')
+    # _, args = parse_command(ctx.message.content)
+    # if len(args) < 1:
+    #     # return
+    #     args = ['corn']
+    # if args[0] == '<@!189945609615048704>':
+    #     args[0] = 'corn'
+    args = ('kanan',)
+    await served_guilds_lock.acquire()
+    discord_guild = served_guilds[ctx.guild.id]
+    served_guilds_lock.release()
+    response = discord_guild.mysql_conn.get_random_row('$'.join((os.getenv('KANAN_DB_NAME'), str(ctx.guild.id))),
+                                                       args[0], os.getenv('KANAN_TB_COLS'))[0]
+    # await ctx.send(response)
+    await ctx.send(embed=discord.Embed(title='Here, have some Kanan :)').set_image(url=response))
+
+
+# TODO split into scramble and unscramble and add option to scramble for specified amount of time
+@bot.command(name='togglescramble', aliases=['ts'], help='Toggles the message scrambler state for the selected member')
+async def toggle_scramble(ctx, *args):
+    print()
+    if len(args) < 1:
+        ctx.send('*You must specify a member to scramble/stop scrambling.')
+    await served_guilds_lock.acquire()
+    discord_guild = served_guilds[ctx.guild.id]
+    served_guilds_lock.release()
+    member = ctx.guild.get_member(int(args[0][3:-1]))
+    if member:
+        member_row = discord_guild.mysql_conn.select_row(
+            '$'.join((os.getenv('MESSAGE_SCRAMBLER_DB_NAME'), str(ctx.guild.id))),
+            'message_scrambler', os.getenv('MESSAGE_SCRAMBLER_TB_COLS'), select_clause=f'member={member.id}')
+        if not member_row:
+            member_row = discord_guild.mysql_conn.add_row(
+                '$'.join((os.getenv('MESSAGE_SCRAMBLER_DB_NAME'), str(ctx.guild.id))),
+                'message_scrambler', os.getenv('MESSAGE_SCRAMBLER_TB_COLS'),
+                row_values=(member.id, True), return_inserted_row=True)
+            member_status = member_row[0]
+        else:
+            member_status = not member_row[1]
+            discord_guild.mysql_conn.update_row(
+                discord_guild.build_custom_db_name(os.getenv('MESSAGE_SCRAMBLER_DB_NAME')), 'message_scrambler',
+                os.getenv('MESSAGE_SCRAMBLER_TB_COLS'), update_clause=f'status={member_status}',
+                select_clause=f'member={member.id}')
+        response = f'Message scrambling for {member.mention} turned **{"ON" if member_status else "OFF"}**'
+    else:
+        response = f'Member doesn\'t exist in the server.'
+    await ctx.send(response)
+
+
+# endregion
 
 async def check_scramble_message(message):
     if message.content[0] == '^':
@@ -115,6 +172,7 @@ async def on_message(message):
     print(f'Message seen: "{message.content}" in channel: "{message.channel}"')
     if str(message.channel) not in ['home', 'gaming', 'news']:
         await bot.process_commands(message)
+        await check_scramble_message(message)
     return
     if message.author == bot.user:
         return
