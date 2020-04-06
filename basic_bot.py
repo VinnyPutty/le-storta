@@ -36,7 +36,7 @@ bot = commands.Bot(command_prefix='^')
 @bot.command(name='randomquote', aliases=['rq', 'randquote'], help='Responds with a random quote from corn')
 async def random_quote(ctx, *args):
     # print(f'Message seen: "{ctx.message.content}" in channel: "{ctx.message.channel}"')
-    _, args = parse_command(ctx.message.content)
+    # _, args = parse_command(ctx.message.content)
     if len(args) < 1:
         # return
         args = ['corn']
