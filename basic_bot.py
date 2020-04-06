@@ -200,25 +200,21 @@ async def print_message_history(channel_name, limit=-1):
 
 
 def main():
-    mysql_client = connect_to_mysql()
-    mysql_cursor = mysql_client.cursor()
-    database_list = build_database_list(mysql_cursor)
-    print(f'Old database list: {database_list}')
-    verify_database_existence(mysql_cursor, db_name=os.getenv('QUOTES_DB_NAME'), database_list=database_list)
-    verify_database_existence(mysql_cursor, db_name=os.getenv('KANAN_DB_NAME'), database_list=database_list)
-    database_list = build_database_list(mysql_cursor)
-    print(f'Updated database list: {database_list}')
-
-    mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
-    mysql_dbcursor = mysql_dbclient.cursor()
-    verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
-
-
-
-
-
-
-
+    # guild = discord.utils.get(bot.guilds, name=)
+    # mysql_basic_connector = BasicConnecter()
+    # mysql_basic_connector.connect_to_mysql()
+    # mysql_client = connect_to_mysql()
+    # mysql_cursor = mysql_client.cursor()
+    # database_list = build_database_list(mysql_cursor)
+    # print(f'Old database list: {database_list}')
+    # verify_database_existence(mysql_cursor, db_name=os.getenv('QUOTES_DB_NAME'), database_list=database_list)
+    # verify_database_existence(mysql_cursor, db_name=os.getenv('KANAN_DB_NAME'), database_list=database_list)
+    # database_list = build_database_list(mysql_cursor)
+    # print(f'Updated database list: {database_list}')
+    #
+    # mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
+    # mysql_dbcursor = mysql_dbclient.cursor()
+    # verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
 
     bot.run(TOKEN)
 
