@@ -32,9 +32,9 @@ served_guilds_lock = asyncio.Lock()
 bot = commands.Bot(command_prefix='^')
 
 
-#region Commands
-@bot.command(name='rq', help='Responds with a random quote from corn')
-async def random_quote(ctx):
+# region Commands
+@bot.command(name='randomquote', aliases=['rq', 'randquote'], help='Responds with a random quote from corn')
+async def random_quote(ctx, *args):
     # print(f'Message seen: "{ctx.message.content}" in channel: "{ctx.message.channel}"')
     _, args = parse_command(ctx.message.content)
     if len(args) < 1:
