@@ -197,3 +197,4 @@ fabric.properties
 .idea/
 config/
 resources/
+scratch*.py
