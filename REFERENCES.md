@@ -3,3 +3,4 @@
 <https://realpython.com/async-io-python/#the-asyncawait-syntax-and-native-coroutines>  
 <https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#invocation-context>  
 <https://12factor.net/>  
+<https://dev.mysql.com/doc/connector-python/en/>
