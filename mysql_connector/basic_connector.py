@@ -236,11 +236,11 @@ class BasicConnector:
         self.mysql_db_cursor.execute(sql_command)
         # for row in self.mysql_db_cursor:
         #     print(row)
-        row_count = self.mysql_db_cursor.fetchone()
+        row_count = self.mysql_db_cursor.fetchone()[0]
         print(f'Row count: {row_count}')
-        if row_count[0] < 1:
+        if row_count < 1:
             return ('No rows in table.',)
-        random_row_number = random.randint(0, self.mysql_db_cursor.rowcount - 1)
+        random_row_number = random.randint(0, row_count - 1)
         sql_command = f'select {tb_cols} from {tb_name} limit 1 offset {random_row_number}'
         print(f'mysql_exec: {sql_command}')
         self.mysql_db_cursor.execute(sql_command)
