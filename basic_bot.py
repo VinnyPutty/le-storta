@@ -173,26 +173,19 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    if message.author == bot.user:
+        return
     print(f'Message seen: "{message.content}" in channel: "{message.channel}"')
     if str(message.channel) not in ['home', 'gaming', 'news']:
         await bot.process_commands(message)
         await check_scramble_message(message)
     return
-    if message.author == bot.user:
-        return
 
-    if message.content[0] == '^':
-        command, args = message[1:].split(' '), []
-        if len(command) > 1:
-            command, args = command[0], command[1:]
-        parse_command(command[0], args)
-
-    if message.content == 'iajofiawejfpjapefkaopekfopakewopfk':
-        response = random.choice(corn_quotes)
-        await message.channel.send(response)
-    elif message.content == 'raise-exception':
+    if message.content == 'raise-exception':
         raise discord.DiscordException
-#endregion
+
+
+# endregion
 
 
 def parse_command(command):
