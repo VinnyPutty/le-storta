@@ -4,6 +4,7 @@ import json
 import os
 import random
 import sys
+from collections import defaultdict
 from typing import Dict
 
 import discord
@@ -11,6 +12,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from discord_classes.discord_guild import DiscordGuild
+from mysql_connector.basic_connector import BasicConnector
 
 if not os.path.exists('./config/.env'):
     if not os.path.exists('./config'):
@@ -199,6 +201,7 @@ async def on_ready():
             # await served_guilds[guild.id].mysql_conn.build_kanan_table(
             #     '$'.join((os.getenv('KANAN_DB_NAME'), str(guild.id))), 'kanan',
             #     os.getenv('KANAN_TB_COLS_INIT'), '(link)', limit=None)
+            await build_tables(guild.id, ['kanan', 'quotes'])
             served_guilds_lock.release()
             print(f'\n------')
             print(f'{bot.user} is connected to the following guild: {guild.name} (id: {guild.id})')
@@ -278,6 +281,16 @@ def main():
     # mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
     # mysql_dbcursor = mysql_dbclient.cursor()
     # verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
+
+    implemented_table_builders['quotes'] = TableBuild(BasicConnector.build_table, os.getenv('QUOTES_DB_NAME'), 'corn',
+                                                      os.getenv('QUOTES_TB_COLS_INIT'),
+                                                      os.getenv('QUOTES_TB_COLS'),
+                                                      os.getenv('QUOTES_CHANNEL'))
+    implemented_table_builders['kanan'] = TableBuild(BasicConnector.build_kanan_table, os.getenv('KANAN_DB_NAME'),
+                                                     'kanan',
+                                                     os.getenv('KANAN_TB_COLS_INIT'),
+                                                     os.getenv('KANAN_TB_COLS'),
+                                                     os.getenv('KANAN_CHANNEL'))
 
     bot.run(TOKEN)
 
