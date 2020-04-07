@@ -91,7 +91,12 @@ class BasicConnector:
             print(f'mysql_exec: {sql_command}')
             self.mysql_db_cursor.execute(sql_command)
 
-    def build_table(self, db_name, tb_name, tb_cols_init, tb_cols=None, channel_history=None, *, limit=200):
+    def init_table(self, db_name, tb_name, tb_cols_init):
+        self.mysql_db_client = self.connect_to_mysql(database=db_name)
+        self.mysql_db_cursor = self.mysql_db_client.cursor()
+        self.verify_table_existence(tb_name, tb_cols_init)
+
+    async def build_table(self, db_name, tb_name, tb_cols_init, tb_cols=None, channel_history=None):
         self.mysql_db_client = self.connect_to_mysql(database=db_name)
         self.mysql_db_cursor = self.mysql_db_client.cursor()
         self.verify_table_existence(tb_name, tb_cols_init)
