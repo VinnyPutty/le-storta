@@ -24,6 +24,31 @@ load_dotenv(dotenv_path='./config/.env')
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_NAMES = json.loads(os.getenv('DISCORD_GUILD'))
 
+
+class TableBuild:
+
+    def __init__(self, builder_func, db_name, tb_name, tb_cols_init, tb_cols, channel_name):
+        self.builder_func = builder_func
+        self.db_name = db_name
+        self.tb_name = tb_name
+        self.tb_cols_init = tb_cols_init
+        self.tb_cols = tb_cols
+        self.channel_name = channel_name
+
+    def get_static_build_params(self):
+        return self.tb_name, self.tb_cols_init, self.tb_cols
+
+    async def get_channel_history(self, guild, *, limit=200):
+        channel = discord.utils.get(guild.text_channels, name=self.channel_name)
+        channel_history = None
+        if channel:
+            channel = guild.get_channel(channel.id)
+            channel_history = channel.history(limit=limit)
+        return channel_history
+
+
+implemented_table_builders: Dict[str, TableBuild] = defaultdict(None)
+
 served_guilds: Dict[int, DiscordGuild] = {}
 served_guilds_lock = asyncio.Lock()
 
@@ -181,6 +206,23 @@ async def on_ready():
             members = '\n - '.join([member.name for member in guild.members[:20]])
             print(f' - {members}')
             print(f'------\n')
+
+
+async def build_tables(guild_id, tables=None):
+    if not tables:
+        return
+
+    guild = discord.utils.get(bot.guilds, id=guild_id)
+
+    tables_to_build = [implemented_table_builders[table_name] for table_name in tables]
+    for table_name in tables:
+        table_build = implemented_table_builders[table_name]
+        if not table_build:
+            continue
+        await table_build.builder_func(served_guilds[guild_id].mysql_conn,
+                                       served_guilds[guild_id].build_custom_db_name(table_build.db_name),
+                                       *table_build.get_static_build_params(),
+                                       await table_build.get_channel_history(guild, limit=None))
 
 
 @bot.event
