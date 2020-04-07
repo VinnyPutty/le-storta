@@ -100,19 +100,10 @@ class BasicConnector:
         self.mysql_db_client = self.connect_to_mysql(database=db_name)
         self.mysql_db_cursor = self.mysql_db_client.cursor()
         self.verify_table_existence(tb_name, tb_cols_init)
-        # Has to be moved because of async calls; should be done in calling function and result passed to build_table
-        # if guild_channel_name:
-        #     guild = discord.utils.get(self.bot.guilds, name=guild_channel_name)
-        #     channel = discord.utils.get(guild.text_channels, name=guild_channel_name)
-        #     channel_id = channel.id
-        #     if limit > 0:
-        #         channel_history = self.bot.get_channel(channel_id).history(limit=limit)
-        #     else:
-        #         channel_history = self.bot.get_channel(channel_id).history()
 
         if channel_history:
             # TODO: refactor this to handle different types of messages and different parsing and loading methods
-            for message in channel_history:
+            async for message in channel_history:
                 sql_command = f'insert ignore into {tb_name} {tb_cols} values (%s)'
                 sql_values = (message.content,)
                 print(f'mysql_exec: {sql_command}, {sql_values}')
@@ -121,15 +112,10 @@ class BasicConnector:
 
     # FIXME this is a purpose-built table builder for testing purposes; needs to be properly integrated into
     #  build_table functionality
-    async def build_kanan_table(self, db_name, tb_name, tb_cols_init, tb_cols=None, channel_history=None, *, limit=200):
+    async def build_kanan_table(self, db_name, tb_name, tb_cols_init, tb_cols=None, channel_history=None):
         self.mysql_db_client = self.connect_to_mysql(database=db_name)
         self.mysql_db_cursor = self.mysql_db_client.cursor()
         self.verify_table_existence(tb_name, tb_cols_init)
-        channel = discord.utils.get(self.guild.text_channels, name=os.getenv('KANAN_CHANNEL'))
-        if channel:
-            channel = self.guild.get_channel(channel.id)
-            channel_history = channel.history(limit=limit)
-        print(f'Kanan channel history for guild "{self.guild.name}": {channel_history}')
         if channel_history:
             async for message in channel_history:
                 attachments = message.attachments
