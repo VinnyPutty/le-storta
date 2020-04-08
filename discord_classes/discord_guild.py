@@ -1,6 +1,5 @@
 import os
 
-import discord
 from dotenv import load_dotenv
 
 from mysql_connector.basic_connector import BasicConnector
@@ -36,14 +35,14 @@ class DiscordGuild:
         database_list = self.mysql_conn.build_database_list()
         print(f'Updated database list: {database_list}')
 
-        self.mysql_conn.build_table(self.build_custom_db_name(os.getenv('QUOTES_DB_NAME')), 'corn',
-                                    os.getenv('QUOTES_TB_COLS_INIT'))
+        self.mysql_conn.init_table(self.build_custom_db_name(os.getenv('QUOTES_DB_NAME')), 'corn',
+                                   os.getenv('QUOTES_TB_COLS_INIT'))
         # mysql_dbclient = connect_to_mysql(database=os.getenv('QUOTES_DB_NAME'))
         # mysql_dbcursor = mysql_dbclient.cursor()
         # verify_table_existence(mysql_dbcursor, 'corn', os.getenv('QUOTES_TB_COLS_INIT'))
 
-        self.mysql_conn.build_table(self.build_custom_db_name(os.getenv('KANAN_DB_NAME')), 'kanan',
-                                          os.getenv('KANAN_TB_COLS_INIT'))
+        self.mysql_conn.init_table(self.build_custom_db_name(os.getenv('KANAN_DB_NAME')), 'kanan',
+                                   os.getenv('KANAN_TB_COLS_INIT'))
 
         # channel = discord.utils.get(self.guild.text_channels, name=os.getenv('KANAN_CHANNEL'))
         # if channel:
