@@ -51,7 +51,7 @@ class BasicConnector:
                 passwd=passwd
             )
         else:
-            print(f'Connection to "{database}" in "{user}"@"{host}" using passwd "{None if not passwd else "****"}"')
+            print(f'Connection to "{database}" with "{user}"@"{host}" using passwd "{None if not passwd else "****"}"')
             mysql_client = mysql.connector.connect(
                 host=host,
                 user=user,
