@@ -102,19 +102,23 @@ async def random_kanan(ctx, *args):
     await served_guilds_lock.acquire()
     discord_guild = served_guilds[ctx.guild.id]
     served_guilds_lock.release()
-    response = discord_guild.mysql_conn.get_random_row('$'.join((os.getenv('KANAN_DB_NAME'), str(ctx.guild.id))),
-                                                       args[0], os.getenv('KANAN_TB_COLS'))[0]
-    # await ctx.send(response)
-    await ctx.send(
-        embed=discord.Embed(title='Here, have some Kanan <:kananayaya:696804621095796777>').set_image(url=response))
+    response = \
+        discord_guild.mysql_conn.get_random_row('$'.join((os.getenv('KANAN_DB_NAME'), str(ctx.guild.id))), args[0],
+                                                os.getenv('KANAN_TB_COLS'))[0]
+    if not response:
+        await ctx.send(content='No kanan available. :(')
+    else:
+        # await ctx.send(response)
+        await ctx.send(
+            embed=discord.Embed(title='Here, have some Kanan <:kananayaya:696804621095796777>').set_image(url=response))
 
 
 # TODO split into scramble and unscramble and add option to scramble for specified amount of time
 @bot.command(name='togglescramble', aliases=['ts'], help='Toggles the message scrambler state for the selected member')
 async def toggle_scramble(ctx, *args):
-    print()
     if len(args) < 1:
-        ctx.send('*You must specify a member to scramble/stop scrambling.')
+        await ctx.send('You must specify a member to scramble/stop scrambling.')
+        return
     await served_guilds_lock.acquire()
     discord_guild = served_guilds[ctx.guild.id]
     served_guilds_lock.release()
@@ -226,7 +230,6 @@ async def build_tables(guild_id, tables=None):
 
     guild = discord.utils.get(bot.guilds, id=guild_id)
 
-    tables_to_build = [implemented_table_builders[table_name] for table_name in tables]
     for table_name in tables:
         table_build = implemented_table_builders[table_name]
         if not table_build:
@@ -243,8 +246,9 @@ async def on_message(message):
         return
     print(f'Message seen: "{message.content}" in channel: "{message.channel}"')
     if str(message.channel) not in ['home', 'gaming', 'news']:
-        await bot.process_commands(message)
-        await check_scramble_message(message)
+        if len(message.content):
+            await bot.process_commands(message)
+            await check_scramble_message(message)
     return
 
     if message.content == 'raise-exception':
