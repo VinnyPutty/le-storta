@@ -27,6 +27,13 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_NAMES = json.loads(os.getenv('DISCORD_GUILD'))
 
 
+try:
+    guild_tables_to_build = {int(guild_id): guild_tables for guild_id, guild_tables in
+                             json.loads(os.getenv('GUILD_TABLES_TO_BUILD')).items()}
+except:
+    guild_tables_to_build = None
+
+
 class TableBuild:
 
     def __init__(self, builder_func, db_name, tb_name, tb_cols_init, tb_cols, channel_name):
@@ -49,7 +56,7 @@ class TableBuild:
         return channel_history
 
 
-implemented_table_builders: Dict[str, TableBuild] = defaultdict(None)
+implemented_table_builders: Dict[str, TableBuild] = defaultdict(lambda: None)
 
 served_guilds: Dict[int, DiscordGuild] = {}
 served_guilds_lock = asyncio.Lock()
@@ -202,7 +209,8 @@ async def on_ready():
             # await served_guilds[guild.id].mysql_conn.build_kanan_table(
             #     '$'.join((os.getenv('KANAN_DB_NAME'), str(guild.id))), 'kanan',
             #     os.getenv('KANAN_TB_COLS_INIT'), '(link)', limit=None)
-            await build_tables(guild.id, ['kanan', 'quotes'])
+            if guild_tables_to_build:
+                await build_tables(guild.id, guild_tables_to_build[guild.id])
             served_guilds_lock.release()
             print(f'\n------')
             print(f'{bot.user} is connected to the following guild: {guild.name} (id: {guild.id})')
