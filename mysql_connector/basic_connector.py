@@ -230,7 +230,7 @@ class BasicConnector:
         row_count = self.mysql_db_cursor.fetchone()[0]
         print(f'Row count: {row_count}')
         if row_count < 1:
-            return ('No rows in table.',)
+            return (False, 'No rows in table.')
         random_row_number = random.randint(0, row_count - 1)
         sql_command = f'select {tb_cols} from {tb_name} limit 1 offset {random_row_number}'
         print(f'mysql_exec: {sql_command}')
