@@ -25,7 +25,7 @@ class DiscordGuild:
         # mysql_client = connect_to_mysql()
         # mysql_cursor = mysql_client.cursor()
         database_list = self.mysql_conn.build_database_list()
-        print(f'Old database list: {database_list}')
+        # print(f'Old database list: {database_list}')
         self.mysql_conn.verify_database_existence(db_name='$'.join((os.getenv('QUOTES_DB_NAME'), str(self.guild.id))),
                                                   database_list=database_list)
         self.mysql_conn.verify_database_existence(db_name='$'.join((os.getenv('KANAN_DB_NAME'), str(self.guild.id))),
@@ -33,7 +33,7 @@ class DiscordGuild:
         self.mysql_conn.verify_database_existence(
             db_name=self.build_custom_db_name(os.getenv('MESSAGE_SCRAMBLER_DB_NAME')), database_list=database_list)
         database_list = self.mysql_conn.build_database_list()
-        print(f'Updated database list: {database_list}')
+        # print(f'Updated database list: {database_list}')
 
         self.mysql_conn.init_table(self.build_custom_db_name(os.getenv('QUOTES_DB_NAME')), 'corn',
                                    os.getenv('QUOTES_TB_COLS_INIT'))
